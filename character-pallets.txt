@@ -1,0 +1,8 @@
+braille-6:
+⠿⠽⠳⠪⠡⠄ 
+
+braille-8:
+⣿⣻⣫⢭⢕⡡⢁⡀ 
+
+ascii:
+@&%QWNM0gB$#DR8mHXKAUbGOpV4d9h6PkqwSE2]ayjxY5Zoen[ult13If}C{iF|(7J)vTLs?z/*cr!+<>;=^,_:'-.` 
