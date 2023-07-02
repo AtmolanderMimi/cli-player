@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::fmt::write;
 use std::fmt::Display;
 use std::fs;
 use std::io;
