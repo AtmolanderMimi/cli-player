@@ -6,6 +6,7 @@ use std::fmt::{Display, Debug};
 use opencv::core::Mat;
 use opencv::videoio;
 use opencv::videoio::{VideoCapture, VideoCaptureTrait};
+use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
@@ -40,13 +41,15 @@ impl Error for VideoParsingError {}
 
 /// Contains the frames of the video and is responsible for downloading
 pub struct Video {
-    frames: Vec<Image>
+    frames: Vec<Image>,
+    fps: u32,
 }
 
 impl Video {
-    pub fn new(frames: Vec<Image>) -> Video {
+    pub fn new(frames: Vec<Image>, fps: u32) -> Video {
         Video {
-            frames
+            frames,
+            fps
         }
     }
 }
@@ -73,6 +76,15 @@ impl Video {
             Err(e) => return Err(VideoParsingError::RustubeError(e)),
         };
 
+        let mut source = match VideoFileSource::new(&video_path, false) {
+            Ok(c) => c,
+            Err(e) => return Err(VideoParsingError::OpenCvError(e))
+        };
+        let fps = match source.fps() {
+            Ok(f) => f as u32,
+            Err(e) => return Err(VideoParsingError::OpenCvError(e)),
+        };
+
         let mut capture = match VideoCapture::from_file(&video_path, videoio::CAP_ANY) {
             Ok(c) => c,
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
@@ -90,7 +102,7 @@ impl Video {
             buffer = Mat::default();
         }
 
-        let video = Video::new(frames);
+        let video = Video::new(frames, fps);
         Ok(video)
     }
 }
