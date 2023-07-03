@@ -110,6 +110,7 @@ mod tests {
         let empty_pallet = CharacterPallet::new("pallet".to_string(), Vec::new());
 
         assert_eq!(Some('@'), pallet.character_for_luminosity(255));
+        assert_eq!(Some(':'), pallet.character_for_luminosity(15));
         assert_eq!(Some(' '), pallet.character_for_luminosity(0));
         assert_eq!(None, empty_pallet.character_for_luminosity(141))
     }
