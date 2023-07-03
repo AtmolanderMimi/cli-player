@@ -21,17 +21,36 @@ impl Display for CharacterPalletParsingError {
         }
     }
 }
+
 impl Error for CharacterPalletParsingError {}
 
 /// Stores a pallet of characters of differing luminosity values
 pub struct CharacterPallet {
     pub name: String,
-    characters: Vec<char>,
+    characters: Vec<char>, // Emptiest to densest
 }
 
 impl CharacterPallet {
     fn new(name: String, characters: Vec<char>) -> CharacterPallet {
         CharacterPallet { name, characters }
+    }
+}
+
+impl CharacterPallet {
+    /// Gives a character that conresponds best to the luminosity within the pallet
+    /// 
+    /// This assumes that the luminosity of the characters linear
+    pub fn character_for_luminosity(&self, luminosity: u8) -> Option<char> {
+        let nb_chars = (self.characters.len() as u8).checked_sub(1)?;
+        if nb_chars == 0 {
+            return None;
+        }
+
+        let luminosity_slice_width = u8::MAX as f32 / nb_chars as f32;
+        // Rust automitically rounds up
+        let luminosity_slice_index = luminosity as f32 / luminosity_slice_width;
+
+        Some(self.characters[luminosity_slice_index as usize])
     }
 }
 
@@ -50,10 +69,12 @@ pub fn parse_pallets_from_file(
         if line.ends_with(':') {
             // This SHOULD never cause a crash
             let name = line[0..(line.len() - 1)].to_string();
-            let characters = match input.lines().nth(i + 1) {
+            let mut characters = match input.lines().nth(i + 1) {
                 Some(l) => l.chars().collect::<Vec<char>>(),
                 None => return Err(CharacterPalletParsingError::FormattingError),
             };
+            // Reverts the character to be emptiest to densest
+            characters.reverse();
 
             let new_character_pallet = CharacterPallet::new(name.clone(), characters);
             character_pallets.insert(name, new_character_pallet);
@@ -67,6 +88,12 @@ pub fn parse_pallets_from_file(
 mod tests {
     use super::*;
 
+    fn new_ascii_pallet() -> CharacterPallet {
+        let character = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@"
+            .chars().collect();
+        CharacterPallet::new("ascii".to_string(), character)
+    }
+
     /// This test assumes that there is a valid `character-pallets.txt` file,
     /// that it is well formatted and contains atleast one pallet
     #[test]
@@ -75,5 +102,15 @@ mod tests {
             parse_pallets_from_file("character-pallets.txt").unwrap();
 
         assert_ne!(0, pallets.len())
+    }
+
+    #[test]
+    fn character_for_luminosity_works() {
+        let pallet = new_ascii_pallet();
+        let empty_pallet = CharacterPallet::new("pallet".to_string(), Vec::new());
+
+        assert_eq!(Some('@'), pallet.character_for_luminosity(255));
+        assert_eq!(Some(' '), pallet.character_for_luminosity(0));
+        assert_eq!(None, empty_pallet.character_for_luminosity(141))
     }
 }
