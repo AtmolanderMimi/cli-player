@@ -1,11 +1,15 @@
+//! Defines how a video is played through the terminal
+
 use std::error::Error;
 use std::fmt::{Display, Debug};
 
+use opencv::core::Mat;
+use opencv::videoio;
 use opencv::videoio::{VideoCapture, VideoCaptureTrait};
-use opencv::{imgproc, videoio};
-use opencv::core::{Vector};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
+
+use crate::image::Image;
 
 #[derive(Debug)]
 pub enum VideoParsingError {
@@ -30,26 +34,6 @@ impl Display for VideoParsingError {
 }
 
 impl Error for VideoParsingError {}
-
-/// Holds the contents of the Image
-pub struct Image {
-    // Why Vector rather than Vec? Because OpenCV doesn't work with Vec.
-    content: Vector<Vector<u8>>
-}
-
-impl Image {
-    pub fn new(content: Vector<Vector<u8>>) -> Image {
-        Image {
-            content
-        }
-    }
-}
-
-impl Image {
-    pub fn content(&self) -> &Vector<Vector<u8>> {
-        &self.content
-    }
-}
 
 // NOTE: For now the frames will be rendered at while the video is displaying, but
 // if live performance becomes an issue, the rendering of frames can be made beforehand
@@ -96,14 +80,14 @@ impl Video {
 
         // "Why?" you may ask. Because OpenVC's image types are too much for me to handle
         let mut frames = Vec::new();
-        let mut buffer: Vector<Vector<u8>> = Vector::new();
+        let mut buffer = Mat::default();
         while match capture.read(&mut buffer) {
             Ok(b) => b,
             Err(e) => return Err(VideoParsingError::OpenCvError(e)),
         } {
             let frame = Image::new(buffer);
             frames.push(frame);
-            buffer = Vector::new();
+            buffer = Mat::default();
         }
 
         let video = Video::new(frames);
