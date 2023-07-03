@@ -2,6 +2,7 @@
 
 use std::error::Error;
 use std::fmt::{Display, Debug};
+use std::rc::Rc;
 
 use opencv::core::Mat;
 use opencv::videoio;
@@ -39,18 +40,33 @@ impl Error for VideoParsingError {}
 // NOTE: For now the frames will be rendered at while the video is displaying, but
 // if live performance becomes an issue, the rendering of frames can be made beforehand
 
-/// Contains the frames of the video and is responsible for downloading
+/// Contains the data of the video and is responsible for downloading
 pub struct Video {
-    frames: Vec<Image>,
+    frames: Vec<Rc<Image>>,
     fps: u32,
+    current_frame: usize,
 }
 
 impl Video {
     pub fn new(frames: Vec<Image>, fps: u32) -> Video {
+        let frames = frames.into_iter().map(|f| Rc::new(f)).collect();
         Video {
             frames,
-            fps
+            fps,
+            current_frame: 0,
         }
+    }
+}
+
+impl Iterator for Video {
+    type Item = Rc<Image>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let frame = self.frames.get(self.current_frame)?;
+        let frame = Rc::clone(frame);
+        self.current_frame += 1;
+
+        Some(frame)
     }
 }
 
