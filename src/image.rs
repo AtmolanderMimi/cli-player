@@ -22,7 +22,7 @@ impl Image {
         &self.content
     }
 
-    pub fn as_string(&self, pallet: CharacterPallet, width: u32) -> String {
+    pub fn as_string(&self, pallet: &CharacterPallet, width: u32) -> String {
         let scaled_image = self.scale(width);
 
         let mut out = String::new();
@@ -34,7 +34,7 @@ impl Image {
                 let pixel: &VecN<u8, 3> = row.at(x as i32)
                     .expect("Pixel should not be out of range");
 
-                let luminosity = ((pixel[0] + pixel[1] + pixel[2]) / 3) as u8;
+                let luminosity = ((pixel[0] as u32 + pixel[1] as u32 + pixel[2] as u32) / 3) as u8;
                 let character = pallet.character_for_luminosity(luminosity).unwrap_or('�');
 
                 out.push(character);
@@ -48,7 +48,7 @@ impl Image {
 
     fn scale(&self, width: u32) -> Mat {
         const INTERPOLATION: i32 = imgproc::INTER_CUBIC;
-        const HEIGHT_TO_WIDHT: f64 = 1.7;
+        const HEIGHT_TO_WIDHT: f64 = 2.3;
 
         let mut old_size = Size::default();
         let mut useless = Point::default();

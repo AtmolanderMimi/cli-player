@@ -3,6 +3,7 @@
 use std::error::Error;
 use std::fmt::{Display, Debug};
 use std::rc::Rc;
+use std::sync::mpsc::Iter;
 
 use opencv::core::Mat;
 use opencv::videoio;
@@ -56,23 +57,10 @@ impl Video {
             current_frame: 0,
         }
     }
-}
 
-impl Iterator for Video {
-    type Item = Rc<Image>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let frame = self.frames.get(self.current_frame)?;
-        let frame = Rc::clone(frame);
-        self.current_frame += 1;
-
-        Some(frame)
-    }
-}
-
-impl Video {
     /// Downloaded the video to ./downloaded-videos/ and collects all the frames
     pub async fn build_from_url(url: &str) -> Result<Video, VideoParsingError> {
+        println!("{}", url);
         let url = match Url::parse(url) {
             Ok(u) => u,
             Err(e) => return Err(VideoParsingError::UrlParseError(e)),
@@ -106,7 +94,6 @@ impl Video {
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
         };
 
-        // "Why?" you may ask. Because OpenVC's image types are too much for me to handle
         let mut frames = Vec::new();
         let mut buffer = Mat::default();
         while match capture.read(&mut buffer) {
@@ -120,6 +107,25 @@ impl Video {
 
         let video = Video::new(frames, fps);
         Ok(video)
+    }
+}
+
+impl Iterator for Video {
+    type Item = Rc<Image>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let frame = self.frames.get(self.current_frame)?;
+        let frame = Rc::clone(frame);
+        self.current_frame += 1;
+
+        Some(frame)
+    }
+}
+
+impl Video {
+    /// Downloaded the video to ./downloaded-videos/ and collects all the frames
+    pub fn fps(&self) -> u32 {
+        self.fps
     }
 }
 
