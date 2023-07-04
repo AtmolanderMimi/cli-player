@@ -1,5 +1,7 @@
 # CLI-Player
 
-yt-terminal is a command line tool build with Rust that allows to play ascii representation of videos downloaded from youtube in the terminal
+cli-terminal is a command line tool build with Rust that allows to play ascii representation of videos downloaded from youtube and videos on your computer in the terminal
+
+It also doubles as a youtube downloader
 
 Started: 2023-06-30
