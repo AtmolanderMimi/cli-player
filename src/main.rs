@@ -6,15 +6,23 @@ use cli_player::video_player;
 
 #[tokio::main]
 async fn main() {
+    const WIDTH: u32 = 130;
+
     let character_pallets =
         match character_pallet::parse_pallets_from_file("character-pallets.txt") {
             Ok(p) => p,
             Err(e) => panic!("Error while parseing: {e}"),
     };
 
+    let pallet = &character_pallets[&"ascii".to_string()];
+
     let url = env::args().nth(1).unwrap();
     println!("Downloading...");
     let video = Video::build_from_url(&url).await.unwrap();
+
+    println!("Preprocessing frames...");
+    video.preprocess(&pallet, WIDTH, true);
     println!("Done!");
-    video_player::play_video(video, &character_pallets[&"ascii".to_string()], 100).await.unwrap();
+
+    video_player::play_video(video, &pallet, WIDTH, true).await.unwrap();
 }

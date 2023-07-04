@@ -1,18 +1,23 @@
+use std::sync::Mutex;
+
 use opencv::core::{Mat, Size, Point, VecN};
 use opencv::imgproc;
 use opencv::prelude::MatTraitConst;
+use colored::Colorize;
 
 use crate::character_pallet::CharacterPallet;
 
 /// Holds the contents of the Image
 pub struct Image {
-    content: Mat
+    content: Mat,
+    as_string: Mutex<Option<String>>,
 }
 
 impl Image {
     pub fn new(content: Mat) -> Image {
         Image {
-            content
+            content,
+            as_string: Mutex::from(None),
         }
     }
 }
@@ -22,7 +27,11 @@ impl Image {
         &self.content
     }
 
-    pub fn as_string(&self, pallet: &CharacterPallet, width: u32) -> String {
+    pub fn as_string(&self, pallet: &CharacterPallet, width: u32, color: bool) -> String {
+        if let Some(s) = &*self.as_string.lock().unwrap() {
+            return s.clone();
+        }
+
         let scaled_image = self.scale(width);
 
         let mut out = String::new();
@@ -34,16 +43,27 @@ impl Image {
                 let pixel: &VecN<u8, 3> = row.at(x as i32)
                     .expect("Pixel should not be out of range");
 
-                let luminosity = ((pixel[0] as u32 + pixel[1] as u32 + pixel[2] as u32) / 3) as u8;
+                let red = pixel[0];
+                let green = pixel[1];
+                let blue = pixel[2];
+
+                let luminosity = ((red as u32 + green as u32 + blue as u32) / 3) as u8;
                 let character = pallet.character_for_luminosity(luminosity).unwrap_or('�');
 
-                out.push(character);
+                if !color {
+                    out.push(character);
+                } else {
+                    let string = character.to_string();
+                    let colored_string = string.truecolor(red, green, blue);
+                    out = format!("{}{}", out, colored_string);
+                }
             }
 
             out.push('\n');
         }
 
-        out
+        *self.as_string.lock().unwrap() = Some(out);
+        self.as_string(pallet, width, color)
     }
 
     fn scale(&self, width: u32) -> Mat {

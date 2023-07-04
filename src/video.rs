@@ -12,6 +12,7 @@ use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
+use crate::character_pallet::CharacterPallet;
 use crate::image::Image;
 
 #[derive(Debug)]
@@ -132,6 +133,13 @@ impl Video {
     /// Downloaded the video to ./downloaded-videos/ and collects all the frames
     pub fn fps(&self) -> u32 {
         self.fps
+    }
+
+    /// Preprocesses the string that each frame will result in
+    pub fn preprocess(&self, pallet: &CharacterPallet, width: u32, color: bool) {
+        for frame in self.frames.iter() {
+            frame.as_string(pallet, width, color);
+        }
     }
 }
 
