@@ -47,7 +47,7 @@ impl Image {
     }
 
     fn scale(&self, width: u32) -> Mat {
-        const INTERPOLATION: i32 = imgproc::INTER_CUBIC;
+        const INTERPOLATION: i32 = imgproc::INTER_LANCZOS4;
         const HEIGHT_TO_WIDHT: f64 = 2.3;
 
         let mut old_size = Size::default();
