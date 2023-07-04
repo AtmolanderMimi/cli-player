@@ -16,9 +16,14 @@ async fn main() {
 
     let pallet = &character_pallets[&"ascii".to_string()];
 
-    let url = env::args().nth(1).unwrap();
-    println!("Downloading...");
-    let video = Video::build_from_url(&url).await.unwrap();
+    let url_or_path = env::args().nth(1).unwrap();
+    let video = match Video::build_from_path(&url_or_path) {
+        Ok(v) => v,
+        Err(_) => {
+            println!("Downloading...");
+            Video::build_from_url(&url_or_path).await.unwrap()
+        },
+    };
 
     println!("Preprocessing frames...");
     video.preprocess(&pallet, WIDTH, true);
