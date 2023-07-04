@@ -1,8 +1,8 @@
 use std::env;
 
-use yt_terminal::character_pallet;
-use yt_terminal::video::Video;
-use yt_terminal::video_player;
+use cli_player::character_pallet;
+use cli_player::video::Video;
+use cli_player::video_player;
 
 #[tokio::main]
 async fn main() {
