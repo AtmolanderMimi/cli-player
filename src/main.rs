@@ -6,7 +6,7 @@ use cli_player::video_player;
 
 #[tokio::main]
 async fn main() {
-    const WIDTH: u32 = 130;
+    const WIDTH: u32 = 100;
 
     let character_pallets =
         match character_pallet::parse_pallets_from_file("character-pallets.txt") {
