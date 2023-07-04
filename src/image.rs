@@ -43,9 +43,9 @@ impl Image {
                 let pixel: &VecN<u8, 3> = row.at(x as i32)
                     .expect("Pixel should not be out of range");
 
-                let red = pixel[0];
+                let red = pixel[2];
                 let green = pixel[1];
-                let blue = pixel[2];
+                let blue = pixel[0];
 
                 let luminosity = ((red as u32 + green as u32 + blue as u32) / 3) as u8;
                 let character = pallet.character_for_luminosity(luminosity).unwrap_or('�');
