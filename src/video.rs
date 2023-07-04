@@ -80,7 +80,13 @@ impl Video {
             Err(e) => return Err(VideoParsingError::RustubeError(e)),
         };
 
-        let mut source = match VideoFileSource::new(&video_path, false) {
+        let video = Video::build_from_path(&video_path)?;
+        Ok(video)
+    }
+
+    /// Collects all the frames from the video specified at the path
+    pub fn build_from_path(path: &str) -> Result<Video, VideoParsingError> {
+        let mut source = match VideoFileSource::new(&path, false) {
             Ok(c) => c,
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
         };
@@ -89,7 +95,7 @@ impl Video {
             Err(e) => return Err(VideoParsingError::OpenCvError(e)),
         };
 
-        let mut capture = match VideoCapture::from_file(&video_path, videoio::CAP_ANY) {
+        let mut capture = match VideoCapture::from_file(&path, videoio::CAP_ANY) {
             Ok(c) => c,
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
         };
