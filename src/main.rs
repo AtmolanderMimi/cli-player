@@ -1,3 +1,5 @@
+use std::process;
+
 use clap::Parser;
 
 use cli_player::character_pallet;
@@ -42,9 +44,14 @@ async fn main() {
 
     let video = match Video::build_from_path(&args.url_or_path) {
         Ok(v) => v,
-        Err(_) => {
+        Err(e) => {
+            eprintln!("Error while tring to find on computer: {e}");
+
             println!("Downloading...");
-            Video::build_from_url(&args.url_or_path).await.unwrap()
+            match Video::build_from_url(&args.url_or_path).await {
+                Ok(v) => v,
+                Err(e) => { eprint!("Error while tring to download: {e}"); process::exit(1); }
+            }
         },
     };
 
@@ -54,5 +61,8 @@ async fn main() {
         println!("Done!");
     }
 
-    video_player::play_video(video, &pallet, args.width, !args.no_color).await.unwrap();
+    match video_player::play_video(video, &pallet, args.width, !args.no_color).await {
+        Ok(()) => (),
+        Err(e) => eprintln!("Error while playing the video: {e}"),
+    };
 }
