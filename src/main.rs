@@ -13,12 +13,20 @@ struct Args {
     #[arg(short, long)]
     url_or_path: String,
 
+    /// Pallet of characters
+    #[arg(short, long, default_value = "ascii")] 
+    pallet: String,
+
     /// Nb of characters in width
     #[arg(short, long, default_value_t = 100)]
     width: u32,
 
+    /// Preprocess the frames
+    #[arg(long, default_value_t = false)]
+    no_preprocess: bool,
+
     /// Use of color
-    #[arg(short, long, default_value_t = false)]
+    #[arg(long, default_value_t = false)]
     no_color: bool,
 }
 
@@ -42,9 +50,11 @@ async fn main() {
         },
     };
 
-    println!("Preprocessing frames...");
-    video.preprocess(&pallet, args.width, !args.no_color);
-    println!("Done!");
+    if !args.no_preprocess {
+        println!("Preprocessing frames...");
+        video.preprocess(&pallet, args.width, !args.no_color);
+        println!("Done!");
+    }
 
     video_player::play_video(video, &pallet, args.width, !args.no_color).await.unwrap();
 }
