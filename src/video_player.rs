@@ -24,6 +24,7 @@ impl Error for VideoPlayerError {}
 pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Error>> {
     let fps = video.fps();
 
+    let mut lag_count: u32 = 0;
     for frame in video.into_iter() {
         let start = SystemTime::now();
 
@@ -32,8 +33,17 @@ pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Err
         let delta_time = start.elapsed()?;
         let sleep_duration = match (Duration::from_secs(1) / fps).checked_sub(delta_time) {
             Some(d) => d,
-            None => return Err(Box::new(VideoPlayerError::TooMuchLag)),
+            None => {
+                lag_count += 4;
+                Duration::from_secs(0)
+            },
         };
+
+        if lag_count >= 25 {
+            return Err(Box::new(VideoPlayerError::TooMuchLag));
+        } else {
+            lag_count = lag_count.checked_sub(1).unwrap_or(0);
+        }
         thread::sleep(sleep_duration);
     }
     Ok(())
