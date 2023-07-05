@@ -55,7 +55,7 @@ impl Image {
                 } else {
                     let string = character.to_string();
                     let colored_string = string.truecolor(red, green, blue);
-                    out = format!("{}{}", out, colored_string);
+                    out.push_str(&colored_string.to_string());
                 }
             }
 
