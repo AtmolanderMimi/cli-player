@@ -40,7 +40,7 @@ async fn main() {
             Err(e) => panic!("Error while parseing: {e}"),
     };
 
-    let pallet = &character_pallets[&"ascii".to_string()];
+    let pallet = &character_pallets[&args.pallet];
 
     let video = match Video::build_from_path(&args.url_or_path) {
         Ok(v) => v,
