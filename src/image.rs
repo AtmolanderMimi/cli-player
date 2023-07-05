@@ -1,20 +1,20 @@
 use std::sync::Mutex;
 
-use opencv::core::{Mat, Size, Point, VecN};
+use opencv::core::{UMat, Size, Point, VecN};
 use opencv::imgproc;
-use opencv::prelude::MatTraitConst;
+use opencv::prelude::{UMatTraitConst, MatTraitConst};
 use colored::Colorize;
 
 use crate::character_pallet::CharacterPallet;
 
 /// Holds the contents of the Image
 pub struct Image {
-    content: Mat,
+    content: UMat,
     as_string: Mutex<Option<String>>,
 }
 
 impl Image {
-    pub fn new(content: Mat) -> Image {
+    pub fn new(content: UMat) -> Image {
         Image {
             content,
             as_string: Mutex::from(None),
@@ -23,7 +23,7 @@ impl Image {
 }
 
 impl Image {
-    pub fn content(&self) -> &Mat {
+    pub fn content(&self) -> &UMat {
         &self.content
     }
 
@@ -38,6 +38,7 @@ impl Image {
         for y in 0..scaled_image.rows() {
             let row = scaled_image.row(y)
                 .expect("Row should not be out of range");
+            let row = row.get_mat(opencv::core::AccessFlag::ACCESS_FAST).unwrap();
 
             for x in 0..width {
                 let pixel: &VecN<u8, 3> = row.at(x as i32)
@@ -66,7 +67,7 @@ impl Image {
         self.as_string(pallet, width, color)
     }
 
-    fn scale(&self, width: u32) -> Mat {
+    fn scale(&self, width: u32) -> UMat {
         const INTERPOLATION: i32 = imgproc::INTER_LANCZOS4;
         const HEIGHT_TO_WIDHT: f64 = 2.0;
 
@@ -79,7 +80,7 @@ impl Image {
         let height = ((old_size.height as f64 * downscale_factor) / HEIGHT_TO_WIDHT) as i32;
         let size = Size::from((width as i32, height));
 
-        let mut scaled_image = Mat::default();
+        let mut scaled_image = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         // INFO: See to change the interpolation for performance
         imgproc::resize(&self.content, &mut scaled_image, size, 0.0, 0.0, INTERPOLATION)
             .expect("Scaling should not fail given positive size");

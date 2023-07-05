@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fmt::{Display, Debug};
 use std::rc::Rc;
 
-use opencv::core::Mat;
+use opencv::core::UMat;
 use opencv::videoio;
 use opencv::videoio::{VideoCapture, VideoCaptureTrait};
 use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
@@ -101,15 +101,16 @@ impl Video {
         };
 
         // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos
+        // Consider steaming the frames in instead of having them all in memory
         let mut frames = Vec::new();
-        let mut buffer = Mat::default();
+        let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         while match capture.read(&mut buffer) {
             Ok(b) => b,
             Err(e) => return Err(VideoParsingError::OpenCvError(e)),
         } {
             let frame = Image::new(buffer);
             frames.push(frame);
-            buffer = Mat::default();
+            buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         }
 
         let video = Video::new(frames, fps);
