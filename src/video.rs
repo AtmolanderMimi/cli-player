@@ -100,6 +100,7 @@ impl Video {
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
         };
 
+        // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos
         let mut frames = Vec::new();
         let mut buffer = Mat::default();
         while match capture.read(&mut buffer) {
