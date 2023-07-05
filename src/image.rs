@@ -6,6 +6,7 @@ use opencv::prelude::{UMatTraitConst, MatTraitConst};
 use colored::Colorize;
 
 use crate::character_pallet::CharacterPallet;
+use crate::config::Config;
 
 /// Holds the contents of the Image
 pub struct Image {
@@ -27,12 +28,12 @@ impl Image {
         &self.content
     }
 
-    pub fn as_string(&self, pallet: &CharacterPallet, width: u32, color: bool) -> String {
+    pub fn as_string(&self, config: &Config) -> String {
         if let Some(s) = &*self.as_string.lock().unwrap() {
             return s.clone();
         }
 
-        let scaled_image = self.scale(width);
+        let scaled_image = self.scale(config.width());
 
         let mut out = String::new();
         for y in 0..scaled_image.rows() {
@@ -40,7 +41,7 @@ impl Image {
                 .expect("Row should not be out of range");
             let row = row.get_mat(opencv::core::AccessFlag::ACCESS_FAST).unwrap();
 
-            for x in 0..width {
+            for x in 0..config.width() {
                 let pixel: &VecN<u8, 3> = row.at(x as i32)
                     .expect("Pixel should not be out of range");
 
@@ -49,9 +50,9 @@ impl Image {
                 let blue = pixel[0];
 
                 let luminosity = ((red as u32 + green as u32 + blue as u32) / 3) as u8;
-                let character = pallet.character_for_luminosity(luminosity).unwrap_or('�');
+                let character = config.pallet().character_for_luminosity(luminosity).unwrap_or('�');
 
-                if !color {
+                if config.color() {
                     out.push(character);
                 } else {
                     let string = character.to_string();
@@ -64,7 +65,7 @@ impl Image {
         }
 
         *self.as_string.lock().unwrap() = Some(out);
-        self.as_string(pallet, width, color)
+        self.as_string(&config)
     }
 
     fn scale(&self, width: u32) -> UMat {
@@ -87,4 +88,21 @@ impl Image {
 
         scaled_image
     }
+}
+
+/// Only stores the text representing the image
+struct TextImage {
+    text: String,
+}
+
+impl TextImage {
+    fn new(text: String) -> TextImage {
+        TextImage {
+            text,
+        }
+    }
+
+    // pub fn build_from_image(image: Image) -> TextImage {
+        // text = image.as_string(pallet, width, color)
+    // }
 }

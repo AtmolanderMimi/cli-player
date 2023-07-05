@@ -25,6 +25,7 @@ impl Display for CharacterPalletParsingError {
 impl Error for CharacterPalletParsingError {}
 
 /// Stores a pallet of characters of differing luminosity values
+#[derive(Clone)]
 pub struct CharacterPallet {
     pub name: String,
     characters: Vec<char>, // Emptiest to densest

@@ -11,7 +11,7 @@ use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
-use crate::character_pallet::CharacterPallet;
+use crate::config::Config;
 use crate::image::Image;
 
 #[derive(Debug)]
@@ -59,7 +59,7 @@ impl Video {
     }
 
     /// Downloaded the video to ./downloaded-videos/ and collects all the frames
-    pub async fn build_from_url(url: &str) -> Result<Video, VideoParsingError> {
+    pub async fn build_from_url(url: &str, config: &Config) -> Result<Video, VideoParsingError> {
         println!("{}", url);
         let url = match Url::parse(url) {
             Ok(u) => u,
@@ -80,12 +80,12 @@ impl Video {
             Err(e) => return Err(VideoParsingError::RustubeError(e)),
         };
 
-        let video = Video::build_from_path(&video_path)?;
+        let video = Video::build_from_path(&video_path, config)?;
         Ok(video)
     }
 
     /// Collects all the frames from the video specified at the path
-    pub fn build_from_path(path: &str) -> Result<Video, VideoParsingError> {
+    pub fn build_from_path(path: &str, config: &Config) -> Result<Video, VideoParsingError> {
         let mut source = match VideoFileSource::new(&path, false) {
             Ok(c) => c,
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
@@ -137,9 +137,9 @@ impl Video {
     }
 
     /// Preprocesses the string that each frame will result in
-    pub fn preprocess(&self, pallet: &CharacterPallet, width: u32, color: bool) {
+    pub fn preprocess(&self, config: &Config) {
         for frame in self.frames.iter() {
-            frame.as_string(pallet, width, color);
+            frame.as_string(&config);
         }
     }
 }

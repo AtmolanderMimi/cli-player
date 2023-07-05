@@ -1,67 +1,40 @@
 use std::process;
 
-use clap::Parser;
-
 use cli_player::character_pallet;
 use cli_player::video::Video;
 use cli_player::video_player;
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// The url or path to use when searching the video
-    #[arg(short, long)]
-    url_or_path: String,
-
-    /// Pallet of characters
-    #[arg(short, long, default_value = "ascii")] 
-    pallet: String,
-
-    /// Nb of characters in width
-    #[arg(short, long, default_value_t = 100)]
-    width: u32,
-
-    /// Preprocess the frames
-    #[arg(long, default_value_t = false)]
-    no_preprocess: bool,
-
-    /// Use of color
-    #[arg(long, default_value_t = false)]
-    no_color: bool,
-}
+use cli_player::config::Config;
 
 #[tokio::main]
 async fn main() {
-    let args = Args::parse();
-
-    let character_pallets =
-        match character_pallet::parse_pallets_from_file("character-pallets.txt") {
-            Ok(p) => p,
-            Err(e) => panic!("Error while parseing: {e}"),
+    let config = match Config::build_from_args() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error while creating config: {e}");
+            process::exit(1);
+        }
     };
 
-    let pallet = &character_pallets[&args.pallet];
-
-    let video = match Video::build_from_path(&args.url_or_path) {
+    let video = match Video::build_from_path(config.query(), &config) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Error while tring to find on computer: {e}");
 
             println!("Downloading...");
-            match Video::build_from_url(&args.url_or_path).await {
+            match Video::build_from_url(config.query(), &config).await {
                 Ok(v) => v,
                 Err(e) => { eprint!("Error while tring to download: {e}"); process::exit(1); }
             }
         },
     };
 
-    if !args.no_preprocess {
+    if config.preprocessing() {
         println!("Preprocessing frames...");
-        video.preprocess(&pallet, args.width, !args.no_color);
+        video.preprocess(&config);
         println!("Done!");
     }
 
-    match video_player::play_video(video, &pallet, args.width, !args.no_color).await {
+    match video_player::play_video(video, &config).await {
         Ok(()) => (),
         Err(e) => eprintln!("Error while playing the video: {e}"),
     };
