@@ -54,6 +54,7 @@ impl Image {
 }
 
 impl ImageAsString for Image {
+    // INFO: Most of the lag of the program seems to come from this function
     fn as_string(&self, config: &Config) -> String {
         if let Some(s) = &*self.as_string.lock().unwrap() {
             return s.clone();
