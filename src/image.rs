@@ -5,8 +5,11 @@ use opencv::imgproc;
 use opencv::prelude::{UMatTraitConst, MatTraitConst};
 use colored::Colorize;
 
-use crate::character_pallet::CharacterPallet;
 use crate::config::Config;
+
+pub trait ImageAsString {
+    fn as_string(&self, config: &Config) -> String;
+}
 
 /// Holds the contents of the Image
 pub struct Image {
@@ -26,46 +29,6 @@ impl Image {
 impl Image {
     pub fn content(&self) -> &UMat {
         &self.content
-    }
-
-    pub fn as_string(&self, config: &Config) -> String {
-        if let Some(s) = &*self.as_string.lock().unwrap() {
-            return s.clone();
-        }
-
-        let scaled_image = self.scale(config.width());
-
-        let mut out = String::new();
-        for y in 0..scaled_image.rows() {
-            let row = scaled_image.row(y)
-                .expect("Row should not be out of range");
-            let row = row.get_mat(opencv::core::AccessFlag::ACCESS_FAST).unwrap();
-
-            for x in 0..config.width() {
-                let pixel: &VecN<u8, 3> = row.at(x as i32)
-                    .expect("Pixel should not be out of range");
-
-                let red = pixel[2];
-                let green = pixel[1];
-                let blue = pixel[0];
-
-                let luminosity = ((red as u32 + green as u32 + blue as u32) / 3) as u8;
-                let character = config.pallet().character_for_luminosity(luminosity).unwrap_or('�');
-
-                if config.color() {
-                    out.push(character);
-                } else {
-                    let string = character.to_string();
-                    let colored_string = string.truecolor(red, green, blue);
-                    out.push_str(&colored_string.to_string());
-                }
-            }
-
-            out.push('\n');
-        }
-
-        *self.as_string.lock().unwrap() = Some(out);
-        self.as_string(&config)
     }
 
     fn scale(&self, width: u32) -> UMat {
@@ -90,8 +53,50 @@ impl Image {
     }
 }
 
+impl ImageAsString for Image {
+    fn as_string(&self, config: &Config) -> String {
+        if let Some(s) = &*self.as_string.lock().unwrap() {
+            return s.clone();
+        }
+
+        let scaled_image = self.scale(config.width());
+
+        let mut out = String::new();
+        for y in 0..scaled_image.rows() {
+            let row = scaled_image.row(y)
+                .expect("Row should not be out of range");
+            let row = row.get_mat(opencv::core::AccessFlag::ACCESS_FAST).unwrap();
+
+            for x in 0..config.width() {
+                let pixel: &VecN<u8, 3> = row.at(x as i32)
+                    .expect("Pixel should not be out of range");
+
+                let red = pixel[2];
+                let green = pixel[1];
+                let blue = pixel[0];
+
+                let luminosity = ((red as u32 + green as u32 + blue as u32) / 3) as u8;
+                let character = config.pallet().character_for_luminosity(luminosity).unwrap_or('�');
+
+                if !config.color() {
+                    out.push(character);
+                } else {
+                    let string = character.to_string();
+                    let colored_string = string.truecolor(red, green, blue);
+                    out.push_str(&colored_string.to_string());
+                }
+            }
+
+            out.push('\n');
+        }
+
+        *self.as_string.lock().unwrap() = Some(out);
+        self.as_string(&config)
+    }
+}
+
 /// Only stores the text representing the image
-struct TextImage {
+pub struct TextImage {
     text: String,
 }
 
@@ -102,7 +107,14 @@ impl TextImage {
         }
     }
 
-    // pub fn build_from_image(image: Image) -> TextImage {
-        // text = image.as_string(pallet, width, color)
-    // }
+    pub fn build_from_image(image: Image, config: &Config) -> TextImage {
+        let text = image.as_string(&config);
+        TextImage::new(text)
+    }
+}
+
+impl ImageAsString for TextImage {
+    fn as_string(&self, _config: &Config) -> String {
+        self.text.clone()
+    }
 }

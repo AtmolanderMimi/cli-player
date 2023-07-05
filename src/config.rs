@@ -19,11 +19,11 @@ struct Args {
     #[arg(short, long, default_value_t = 100)]
     width: u32,
 
-    /// Preprocess the frames
+    /// Removes frame preprocessing (takes a lot VRAM)
     #[arg(long, default_value_t = false)]
     no_preprocess: bool,
 
-    /// Use of color
+    /// Disables the use of color
     #[arg(long, default_value_t = false)]
     no_color: bool,
 }

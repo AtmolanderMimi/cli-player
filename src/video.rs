@@ -12,7 +12,7 @@ use rustube::Video as YtVideo;
 use rustube::url::Url;
 
 use crate::config::Config;
-use crate::image::Image;
+use crate::image::{TextImage, Image, ImageAsString};
 
 #[derive(Debug)]
 pub enum VideoParsingError {
@@ -43,13 +43,13 @@ impl Error for VideoParsingError {}
 
 /// Contains the data of the video and is responsible for downloading
 pub struct Video {
-    frames: Vec<Rc<Image>>,
+    frames: Vec<Rc<Box<dyn ImageAsString>>>,
     fps: u32,
     current_frame: usize,
 }
 
 impl Video {
-    pub fn new(frames: Vec<Image>, fps: u32) -> Video {
+    pub fn new(frames: Vec<Box<dyn ImageAsString>>, fps: u32) -> Video {
         let frames = frames.into_iter().map(|f| Rc::new(f)).collect();
         Video {
             frames,
@@ -102,14 +102,19 @@ impl Video {
 
         // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos
         // Consider steaming the frames in instead of having them all in memory
-        let mut frames = Vec::new();
+        let mut frames: Vec<Box<dyn ImageAsString>> = Vec::new();
         let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         while match capture.read(&mut buffer) {
             Ok(b) => b,
             Err(e) => return Err(VideoParsingError::OpenCvError(e)),
         } {
             let frame = Image::new(buffer);
-            frames.push(frame);
+
+            if !config.preprocessing() {
+                frames.push(Box::new(frame));
+            } else {
+                frames.push(Box::new(TextImage::build_from_image(frame, &config)))
+            }
             buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         }
 
@@ -119,7 +124,7 @@ impl Video {
 }
 
 impl Iterator for Video {
-    type Item = Rc<Image>;
+    type Item = Rc<Box<dyn ImageAsString>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let frame = self.frames.get(self.current_frame)?;
@@ -134,13 +139,6 @@ impl Video {
     /// Downloaded the video to ./downloaded-videos/ and collects all the frames
     pub fn fps(&self) -> u32 {
         self.fps
-    }
-
-    /// Preprocesses the string that each frame will result in
-    pub fn preprocess(&self, config: &Config) {
-        for frame in self.frames.iter() {
-            frame.as_string(&config);
-        }
     }
 }
 
