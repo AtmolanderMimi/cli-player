@@ -41,12 +41,9 @@ impl CharacterPallet {
     /// 
     /// This assumes that the luminosity of the characters linear
     pub fn character_for_luminosity(&self, luminosity: u8) -> Option<char> {
-        let nb_chars = (self.characters.len() as u8).checked_sub(1)?;
-        if nb_chars == 0 {
-            return None;
-        }
+        let nb_divisions = (self.characters.len() as u8).checked_sub(1)?;
 
-        let luminosity_slice_width = u8::MAX as f32 / nb_chars as f32;
+        let luminosity_slice_width = u8::MAX as f32 / nb_divisions as f32;
         // Rust automitically rounds up
         let luminosity_slice_index = luminosity as f32 / luminosity_slice_width;
 
