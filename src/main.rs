@@ -1,5 +1,3 @@
-use std::env;
-
 use clap::Parser;
 
 use cli_player::character_pallet;

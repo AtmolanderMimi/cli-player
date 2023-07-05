@@ -3,7 +3,6 @@
 use std::error::Error;
 use std::fmt::{Display, Debug};
 use std::rc::Rc;
-use std::sync::mpsc::Iter;
 
 use opencv::core::Mat;
 use opencv::videoio;
