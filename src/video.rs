@@ -100,8 +100,8 @@ impl Video {
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
         };
 
-        // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos
-        // Consider steaming the frames in instead of having them all in memory
+        // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos while not using preprocessing
+        // Consider streaming the frames in instead of having them all in memory
         let mut frames: Vec<Box<dyn ImageAsString>> = Vec::new();
         let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         while match capture.read(&mut buffer) {
