@@ -84,6 +84,7 @@ impl ImageAsString for Image {
                 } else {
                     let string = character.to_string();
                     let colored_string = string.truecolor(red, green, blue);
+                    // Without this .to_string() the output is not colored
                     out.push_str(&colored_string.to_string());
                 }
             }
