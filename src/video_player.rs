@@ -23,6 +23,8 @@ impl Error for VideoPlayerError {}
 
 pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Error>> {
     let fps = video.fps();
+    println!("FPS = {fps}");
+    thread::sleep(Duration::from_secs(3));
 
     let mut lag_count: u32 = 0;
     for frame in video.into_iter() {

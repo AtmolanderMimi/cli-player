@@ -8,6 +8,7 @@ use opencv::core::UMat;
 use opencv::videoio;
 use opencv::videoio::{VideoCapture, VideoCaptureTrait};
 use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
+use rayon::prelude::{IntoParallelRefIterator, IntoParallelIterator, ParallelIterator};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
@@ -86,6 +87,8 @@ impl Video {
 
     /// Collects all the frames from the video specified at the path
     pub fn build_from_path(path: &str, config: &Config) -> Result<Video, VideoParsingError> {
+        const FRAME_CHUNK_SIZE: usize = 10;
+
         let mut source = match VideoFileSource::new(&path, false) {
             Ok(c) => c,
             Err(e) => return Err(VideoParsingError::OpenCvError(e))
@@ -104,6 +107,7 @@ impl Video {
         // Consider streaming the frames in instead of having them all in memory
         let mut frames: Vec<Box<dyn ImageAsString>> = Vec::new();
         let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
+        let mut frame_chunk = Vec::new();
         while match capture.read(&mut buffer) {
             Ok(b) => b,
             Err(e) => return Err(VideoParsingError::OpenCvError(e)),
@@ -113,10 +117,26 @@ impl Video {
             if !config.preprocessing() {
                 frames.push(Box::new(frame));
             } else {
-                frames.push(Box::new(TextImage::build_from_image(frame, &config)))
+                frame_chunk.push(frame);
+
+                if frame_chunk.len() == FRAME_CHUNK_SIZE {
+                    let text_images = frame_chunk.into_par_iter()
+                        .map(|f| Box::new(TextImage::build_from_image(f, &config)))
+                        .collect::<Vec<Box<TextImage>>>();
+
+                    text_images.into_iter().for_each(|ti| frames.push(ti));
+                    frame_chunk = Vec::new();
+                }
             }
             buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
         }
+
+        // Processes the frame chunk that was not complete
+        let text_images = frame_chunk.into_par_iter()
+        .map(|f| Box::new(TextImage::build_from_image(f, &config)))
+        .collect::<Vec<Box<TextImage>>>();
+
+        text_images.into_iter().for_each(|ti| frames.push(ti));
 
         let video = Video::new(frames, fps);
         Ok(video)

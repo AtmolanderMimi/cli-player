@@ -19,6 +19,10 @@ struct Args {
     #[arg(short, long, default_value_t = 100)]
     width: u32,
 
+    /// Limits the frame rate to this
+    #[arg(short, long, default_value_t = 30)]
+    frame_limit: u32,
+
     /// Removes frame preprocessing (takes a lot VRAM)
     #[arg(long, default_value_t = false)]
     no_preprocess: bool,
