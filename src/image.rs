@@ -4,6 +4,7 @@ use opencv::core::{UMat, Size, Point, VecN};
 use opencv::imgproc;
 use opencv::prelude::{UMatTraitConst, MatTraitConst};
 use colored::Colorize;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use crate::config::Config;
 
@@ -62,12 +63,19 @@ impl ImageAsString for Image {
 
         let scaled_image = self.scale(config.width());
 
-        let mut out = String::new();
-        for y in 0..scaled_image.rows() {
-            let row = scaled_image.row(y)
-                .expect("Row should not be out of range");
+        
+        // Gets the rows
+        let mut rows = Vec::new();
+        for i in 0..scaled_image.rows() {
+            let row = scaled_image.row(i)
+            .expect("Row should not be out of range");
             let row = row.get_mat(opencv::core::AccessFlag::ACCESS_FAST).unwrap();
+            rows.push(row);
+        }
 
+        // Render the rows in parralel
+        let text_rows = rows.into_par_iter().map(|row| {
+            let mut text_row = String::new();
             for x in 0..config.width() {
                 let pixel: &VecN<u8, 3> = row.at(x as i32)
                     .expect("Pixel should not be out of range");
@@ -80,17 +88,22 @@ impl ImageAsString for Image {
                 let character = config.pallet().character_for_luminosity(luminosity).unwrap_or('�');
 
                 if !config.color() {
-                    out.push(character);
+                    text_row.push(character);
                 } else {
                     let string = character.to_string();
                     let colored_string = string.truecolor(red, green, blue);
                     // Without this .to_string() the output is not colored
-                    out.push_str(&colored_string.to_string());
+                    text_row.push_str(&colored_string.to_string());
                 }
             }
 
-            out.push('\n');
-        }
+            text_row.push('\n');
+
+            text_row
+        }).collect::<Vec<String>>();
+
+        let mut out = String::new();
+        text_rows.into_iter().for_each(|tr| out.push_str(&tr));
 
         *self.as_string.lock().unwrap() = Some(out);
         self.as_string(&config)

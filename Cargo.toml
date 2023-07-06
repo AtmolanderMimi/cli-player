@@ -11,3 +11,4 @@ colored = "2.0.0"
 rustube = "0.6.0"
 clap    = { version = "4.3.10", features = ["derive"] }
 tokio   = { version = "1.21.2", features = ["full"] }
+rayon   = "1.7.0"
