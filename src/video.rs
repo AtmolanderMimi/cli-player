@@ -8,7 +8,7 @@ use opencv::core::UMat;
 use opencv::videoio;
 use opencv::videoio::{VideoCapture, VideoCaptureTrait};
 use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
-use rayon::prelude::{IntoParallelRefIterator, IntoParallelIterator, ParallelIterator};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
