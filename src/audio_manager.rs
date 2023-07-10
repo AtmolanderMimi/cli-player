@@ -61,4 +61,12 @@ impl AudioManager {
 
         Ok(())
     }
+
+    pub fn stop(&self) {
+        self.sink.stop()
+    }
+
+    pub fn set_volume(&self, volume: f32) {
+        self.sink.set_volume(volume)
+    }
 }

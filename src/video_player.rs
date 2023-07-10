@@ -26,6 +26,7 @@ pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Err
 
     // Starts the audio
     // The audio will stop when the program stops or when it has no more audio
+    video.set_volume(config.volume());
     video.start_audio()?;
 
     let mut lag_count: u32 = 0;

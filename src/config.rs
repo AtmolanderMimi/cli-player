@@ -23,6 +23,10 @@ struct Args {
     #[arg(short, long, default_value_t = 30)]
     frame_limit: u32,
 
+    /// Sets the volume (can be over 1.0)
+    #[arg(short, long, default_value_t = 1.0)]
+    volume: f32,
+
     /// Removes frame preprocessing (takes a lot VRAM)
     #[arg(long, default_value_t = false)]
     no_preprocess: bool,
@@ -44,12 +48,14 @@ pub struct Config {
     query: String,
     pallet: CharacterPallet,
     width: u32,
+    frame_limit: u32,
+    volume: f32,
     color: bool,
     preprocessing: bool, 
 }
 
 impl Config {
-    fn build(query: String, pallet: String, width: u32, color: bool, preprocessing: bool) -> Result<Config, PalletDoesNotExistError> {
+    fn build(query: String, pallet: String, width: u32, frame_limit: u32, volume: f32, color: bool, preprocessing: bool) -> Result<Config, PalletDoesNotExistError> {
         let character_pallets = match character_pallet::parse_pallets_from_file("character-pallets.txt") {
             Ok(p) => p,
             Err(e) => panic!("Error while parseing: {e}"),
@@ -65,6 +71,8 @@ impl Config {
             query,
             pallet,
             width,
+            frame_limit,
+            volume,
             color,
             preprocessing,
         };
@@ -79,6 +87,8 @@ impl Config {
             args.url_or_path,
             args.pallet,
             args.width,
+            args.frame_limit,
+            args.volume,
             !args.no_color,
             !args.no_preprocess,
         )?;
@@ -98,6 +108,14 @@ impl Config {
 
     pub fn width(&self) -> u32 {
         self.width
+    }
+
+    pub fn frame_limit(&self) -> u32 {
+        self.frame_limit
+    }
+
+    pub fn volume(&self) -> f32 {
+        self.volume
     }
 
     pub fn color(&self) -> bool {

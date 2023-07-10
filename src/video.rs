@@ -219,6 +219,10 @@ impl Video {
     pub fn start_audio(&self) -> Result<(), VideoError> {
         self.audio_player.play_from_path(&self.audio_source_path)
     }
+
+    pub fn set_volume(&self, volume: f32) {
+        self.audio_player.set_volume(volume)
+    }
 }
 
 // TODO: Add tests
