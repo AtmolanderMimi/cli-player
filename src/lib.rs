@@ -3,6 +3,9 @@ pub mod video;
 pub mod image;
 pub mod video_player;
 pub mod config;
-mod audio_manager;
+pub mod audio_manager;
 
-pub use video::VideoError;
+pub use config::Config;
+pub use audio_manager::AudioManager;
+pub use character_pallet::CharacterPallet;
+pub use video::{Video, VideoError};
