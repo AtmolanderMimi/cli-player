@@ -4,4 +4,7 @@ cli-terminal is a command line tool build with Rust that allows to play ascii re
 
 It also doubles as a youtube downloader
 
+
+**REQUIRES FFMPEG TO BE INSTALLED**
+
 Started: 2023-06-30
