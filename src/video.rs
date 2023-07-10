@@ -175,7 +175,6 @@ impl Video {
         text_images.into_iter().for_each(|ti| frames.push(ti));
 
         // Seperates audio from video
-        // TODO: Now this takes most of the time
         match std::fs::remove_file(TEMP_AUDIO_PATH) {
             Ok(()) => (),
             Err(e) => return Err(VideoError::IoError(e))
