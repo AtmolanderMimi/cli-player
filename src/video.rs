@@ -1,10 +1,8 @@
 //! Defines how a video is played through the terminal
 
-use std::cell::RefCell;
 use std::error::Error;
 use std::fmt::{Display, Debug};
-use std::fs::File;
-use std::io::{self, BufReader};
+use std::io;
 use std::process::Command;
 use std::rc::Rc;
 
@@ -15,8 +13,8 @@ use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
-use rodio::{Decoder, OutputStream, Sink};
 
+use crate::audio_manager::AudioManager;
 use crate::config::Config;
 use crate::image::{TextImage, Image, ImageAsString};
 
@@ -77,19 +75,19 @@ impl Error for RodioError {}
 pub struct Video {
     frames: Vec<Rc<Box<dyn ImageAsString>>>,
     audio_source_path: String,
-    audio_player: RefCell<Option<Sink>>,
+    audio_player: AudioManager,
     fps: u32,
     current_frame: usize,
 }
 
 impl Video {
-    pub fn new(frames: Vec<Box<dyn ImageAsString>>, fps: u32, audio_source_path: String) -> Video {
+    fn new(frames: Vec<Box<dyn ImageAsString>>, fps: u32, audio_source_path: String, audio_player: AudioManager) -> Video {
         let frames = frames.into_iter().map(|f| Rc::new(f)).collect();
         Video {
             frames,
             fps,
             audio_source_path,
-            audio_player: RefCell::new(None),
+            audio_player: audio_player,
             current_frame: 0,
         }
     }
@@ -193,7 +191,9 @@ impl Video {
             Err(e) => return Err(VideoError::FfmpegError(e)),
         }
 
-        let video = Video::new(frames, fps, TEMP_AUDIO_PATH.to_string());
+        let audio_player = AudioManager::build()?;
+
+        let video = Video::new(frames, fps, TEMP_AUDIO_PATH.to_string(), audio_player);
         Ok(video)
     }
 }
@@ -211,43 +211,13 @@ impl Iterator for Video {
 }
 
 impl Video {
-    fn audio_buffer_from_path(path: &str) -> Result<Decoder<BufReader<File>>, VideoError> {
-        let file = match File::open(path) {
-            Ok(f) => f,
-            Err(e) => return Err(VideoError::IoError(e)),
-        };
-
-        let buf_reader = BufReader::new(file);
-
-        // "Error while playing the video: Unrecognized format" while trying to open .mp4 file
-        let audio_source =  match Decoder::new(buf_reader) { 
-            Ok(d) => d,
-            Err(e) => return Err(VideoError::RodioError(RodioError::DecoderError(e)))
-        };
-
-        Ok(audio_source)
-    }
-
     /// Gives the fps of the video
     pub fn fps(&self) -> u32 {
         self.fps
     }
 
-    // TODO: Move audio system to it's own struct
-    // Make sure to keep OutputStream in scope to play
-    pub fn start_audio(&self) -> Result<OutputStream, VideoError> {
-        // We NEED to keep _out_stream in scope for the audio to play
-        let (out_stream, output_stream_handle) = match OutputStream::try_default() {
-            Ok((_output, s)) => (_output, s),
-            Err(e) => return Err(VideoError::RodioError(RodioError::StreamError(e)))
-        };
-        let audio_source = Video::audio_buffer_from_path(&self.audio_source_path)?;
-        //let samples = audio_source.convert_samples();
-
-        let new_sink = Sink::try_new(&output_stream_handle).unwrap();
-        new_sink.append(audio_source);
-        *self.audio_player.borrow_mut() = Some(new_sink);
-        Ok(out_stream)
+    pub fn start_audio(&self) -> Result<(), VideoError> {
+        self.audio_player.play_from_path(&self.audio_source_path)
     }
 }
 
