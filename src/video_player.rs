@@ -23,8 +23,6 @@ impl Error for VideoPlayerError {}
 
 pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Error>> {
     let fps = video.fps();
-    println!("FPS = {fps}");
-    thread::sleep(Duration::from_secs(3));
 
     // Starts the audio
     // The audio will stop when the program stops or when it has no more audio
