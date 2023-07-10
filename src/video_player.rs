@@ -26,6 +26,10 @@ pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Err
     println!("FPS = {fps}");
     thread::sleep(Duration::from_secs(3));
 
+    // Starts the audio
+    // The audio will stop when the program stops or when it has no more audio
+    let _stream = video.start_audio()?;
+
     let mut lag_count: u32 = 0;
     for frame in video.into_iter() {
         let start = SystemTime::now();
