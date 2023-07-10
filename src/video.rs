@@ -94,7 +94,6 @@ impl Video {
 
     /// Downloaded the video to ./downloaded-videos/ and collects all the frames
     pub async fn build_from_url(url: &str, config: &Config) -> Result<Video, VideoError> {
-        println!("{}", url);
         let url = match Url::parse(url) {
             Ok(u) => u,
             Err(e) => return Err(VideoError::UrlParseError(e)),
