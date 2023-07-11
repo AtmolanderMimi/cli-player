@@ -66,9 +66,6 @@ impl Display for RodioError {
 
 impl Error for RodioError {}
 
-// NOTE: For now the frames will be rendered at while the video is displaying, but
-// if live performance becomes an issue, the rendering of frames can be made beforehand
-
 /// Contains the data of the video and is responsible for downloading
 pub struct Video {
     frames: Frames,
