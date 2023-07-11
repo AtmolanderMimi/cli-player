@@ -84,7 +84,7 @@ impl Video {
             frames,
             fps,
             audio_source_path,
-            audio_player: audio_player,
+            audio_player,
             _current_frame: 0,
         }
     }
