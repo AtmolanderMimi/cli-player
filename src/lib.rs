@@ -5,6 +5,7 @@ pub mod video_player;
 pub mod config;
 pub mod audio_manager;
 pub mod wating_animation;
+pub mod frames;
 
 pub use config::Config;
 pub use audio_manager::AudioManager;

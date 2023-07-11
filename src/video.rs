@@ -5,17 +5,16 @@ use std::fmt::{Display, Debug};
 use std::io;
 use std::process::Command;
 
-use opencv::core::UMat;
 use opencv::videoio;
-use opencv::videoio::{VideoCapture, VideoCaptureTrait};
+use opencv::videoio::VideoCapture;
 use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
 use crate::audio_manager::AudioManager;
 use crate::config::Config;
-use crate::image::{TextImage, Image, ImageAsString};
+use crate::image::ImageAsString;
+use crate::frames::Frames;
 
 #[derive(Debug)]
 pub enum VideoError {
@@ -70,18 +69,13 @@ impl Error for RodioError {}
 // NOTE: For now the frames will be rendered at while the video is displaying, but
 // if live performance becomes an issue, the rendering of frames can be made beforehand
 
-enum Frames {
-    Streamed(VideoCapture),
-    Preprocessed(Vec<TextImage>)
-}
-
 /// Contains the data of the video and is responsible for downloading
 pub struct Video {
     frames: Frames,
     audio_source_path: String,
     audio_player: AudioManager,
     fps: u32,
-    current_frame: usize,
+    _current_frame: usize,
 }
 
 impl Video {
@@ -91,7 +85,7 @@ impl Video {
             fps,
             audio_source_path,
             audio_player: audio_player,
-            current_frame: 0,
+            _current_frame: 0,
         }
     }
 
@@ -122,7 +116,6 @@ impl Video {
 
     /// Collects all the frames from the video specified at the path
     pub fn build_from_path(path: &str, config: &Config) -> Result<Video, VideoError> {
-        const FRAME_CHUNK_SIZE: usize = 10;
         const TEMP_AUDIO_PATH: &str = "./temp_audio.wav";
 
         let mut source = match VideoFileSource::new(&path, false) {
@@ -134,44 +127,13 @@ impl Video {
             Err(e) => return Err(VideoError::OpenCvError(e)),
         };
 
-        let mut capture = match VideoCapture::from_file(&path, videoio::CAP_ANY) {
+        let capture = match VideoCapture::from_file(&path, videoio::CAP_ANY) {
             Ok(c) => c,
             Err(e) => return Err(VideoError::OpenCvError(e))
         };
         
         let frames = if config.preprocessing() {
-            let mut frames: Vec<TextImage> = Vec::new();
-            let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-            let mut frame_chunk = Vec::new();
-
-            while match capture.read(&mut buffer) {
-                Ok(b) => b,
-                Err(e) => return Err(VideoError::OpenCvError(e)),
-            } {
-                let frame = Image::new(buffer);
-            
-                frame_chunk.push(frame);
-            
-                if frame_chunk.len() == FRAME_CHUNK_SIZE {
-                    let text_images = frame_chunk.into_par_iter()
-                        .map(|f| TextImage::build_from_image(f, &config))
-                        .collect::<Vec<TextImage>>();
-                
-                    text_images.into_iter().for_each(|ti| frames.push(ti));
-                    frame_chunk = Vec::new();
-                }
-            
-                buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-            }
-
-            // Processes the frame chunk that was not complete
-            let text_images = frame_chunk.into_par_iter()
-            .map(|f| TextImage::build_from_image(f, &config))
-            .collect::<Vec<TextImage>>();
-
-            text_images.into_iter().for_each(|ti| frames.push(ti));
-
-            Frames::Preprocessed(frames)
+            Frames::build_preprocessed(capture, config)?
         } else {
             Frames::Streamed(capture)
         };
@@ -206,24 +168,7 @@ impl Video {
 
 impl Video {
     pub fn next_frame(&mut self) -> Option<Box<dyn ImageAsString>> {
-        self.current_frame += 1;
-
-        match &mut self.frames {
-            Frames::Streamed(cap) => {
-                let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-                match cap.read(&mut buffer) {
-                    Ok(_) => (),
-                    Err(_) => return None,
-                };
-
-                Some(Box::new(Image::new(buffer)))
-            },
-
-            Frames::Preprocessed(frames) => {
-                let current_frame = frames.remove(0);
-                Some(Box::new(current_frame))
-            }
-        }
+        self.frames.next_frame()
     }
 
     pub fn next_frame_string(&mut self, config: &Config) -> Option<String> {
