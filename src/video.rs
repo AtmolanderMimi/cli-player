@@ -138,34 +138,6 @@ impl Video {
             Ok(c) => c,
             Err(e) => return Err(VideoError::OpenCvError(e))
         };
-
-        // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos while not using preprocessing
-        // Consider streaming the frames in instead of having them all in memory
-        //let mut frames: Vec<Box<dyn ImageAsString>> = Vec::new();
-        //let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-        //let mut frame_chunk = Vec::new();
-        //while match capture.read(&mut buffer) {
-        //    Ok(b) => b,
-        //    Err(e) => return Err(VideoError::OpenCvError(e)),
-        //} {
-        //    let frame = Image::new(buffer);
-        //
-        //    if !config.preprocessing() {
-        //        frames.push(Box::new(frame));
-        //    } else {
-        //        frame_chunk.push(frame);
-        //
-        //        if frame_chunk.len() == FRAME_CHUNK_SIZE {
-        //            let text_images = frame_chunk.into_par_iter()
-        //                .map(|f| Box::new(TextImage::build_from_image(f, &config)))
-        //                .collect::<Vec<Box<TextImage>>>();
-        //
-        //            text_images.into_iter().for_each(|ti| frames.push(ti));
-        //            frame_chunk = Vec::new();
-        //        }
-        //    }
-        //    buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-        //}
         
         let frames = if config.preprocessing() {
             let mut frames: Vec<TextImage> = Vec::new();
