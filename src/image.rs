@@ -46,7 +46,7 @@ impl Image {
         let size = Size::from((width as i32, height));
 
         let mut scaled_image = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-        // INFO: See to change the interpolation for performance
+        // NOTE: See to change the interpolation for performance
         imgproc::resize(&self.content, &mut scaled_image, size, 0.0, 0.0, INTERPOLATION)
             .expect("Scaling should not fail given positive size");
 
@@ -55,7 +55,7 @@ impl Image {
 }
 
 impl ImageAsString for Image {
-    // INFO: Most of the lag of the program seems to come from this function
+    // NOTE: Most of the lag of the program seems to come from this function
     fn as_string(&self, config: &Config) -> String {
         if let Some(s) = &*self.as_string.lock().unwrap() {
             return s.clone();
