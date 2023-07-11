@@ -21,7 +21,7 @@ impl Display for VideoPlayerError {
 
 impl Error for VideoPlayerError {}
 
-pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Error>> {
+pub async fn play_video(mut video: Video, config: &Config) -> Result<(), Box<dyn Error>> {
     let fps = video.fps();
 
     // Starts the audio
@@ -30,10 +30,15 @@ pub async fn play_video(video: Video, config: &Config) -> Result<(), Box<dyn Err
     video.start_audio()?;
 
     let mut lag_count: u32 = 0;
-    for frame in video.into_iter() {
+    loop  {
+        let frame = match video.next_frame_string(config) {
+            Some(f) => f,
+            None => break,
+        };
+
         let start = SystemTime::now();
 
-        println!("{}", frame.as_string(&config));
+        println!("{}", frame);
 
         let delta_time = start.elapsed()?;
         let sleep_duration = match (Duration::from_secs(1) / fps).checked_sub(delta_time) {

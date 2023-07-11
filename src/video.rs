@@ -4,7 +4,6 @@ use std::error::Error;
 use std::fmt::{Display, Debug};
 use std::io;
 use std::process::Command;
-use std::rc::Rc;
 
 use opencv::core::UMat;
 use opencv::videoio;
@@ -71,9 +70,14 @@ impl Error for RodioError {}
 // NOTE: For now the frames will be rendered at while the video is displaying, but
 // if live performance becomes an issue, the rendering of frames can be made beforehand
 
+enum Frames {
+    Streamed(VideoCapture),
+    Preprocessed(Vec<TextImage>)
+}
+
 /// Contains the data of the video and is responsible for downloading
 pub struct Video {
-    frames: Vec<Rc<Box<dyn ImageAsString>>>,
+    frames: Frames,
     audio_source_path: String,
     audio_player: AudioManager,
     fps: u32,
@@ -81,8 +85,7 @@ pub struct Video {
 }
 
 impl Video {
-    fn new(frames: Vec<Box<dyn ImageAsString>>, fps: u32, audio_source_path: String, audio_player: AudioManager) -> Video {
-        let frames = frames.into_iter().map(|f| Rc::new(f)).collect();
+    fn new(frames: Frames, fps: u32, audio_source_path: String, audio_player: AudioManager) -> Video {
         Video {
             frames,
             fps,
@@ -138,38 +141,70 @@ impl Video {
 
         // TODO: This piece of code is an absolute memory hog, so much so that the program cannot run with bigger videos while not using preprocessing
         // Consider streaming the frames in instead of having them all in memory
-        let mut frames: Vec<Box<dyn ImageAsString>> = Vec::new();
-        let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-        let mut frame_chunk = Vec::new();
-        while match capture.read(&mut buffer) {
-            Ok(b) => b,
-            Err(e) => return Err(VideoError::OpenCvError(e)),
-        } {
-            let frame = Image::new(buffer);
+        //let mut frames: Vec<Box<dyn ImageAsString>> = Vec::new();
+        //let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
+        //let mut frame_chunk = Vec::new();
+        //while match capture.read(&mut buffer) {
+        //    Ok(b) => b,
+        //    Err(e) => return Err(VideoError::OpenCvError(e)),
+        //} {
+        //    let frame = Image::new(buffer);
+        //
+        //    if !config.preprocessing() {
+        //        frames.push(Box::new(frame));
+        //    } else {
+        //        frame_chunk.push(frame);
+        //
+        //        if frame_chunk.len() == FRAME_CHUNK_SIZE {
+        //            let text_images = frame_chunk.into_par_iter()
+        //                .map(|f| Box::new(TextImage::build_from_image(f, &config)))
+        //                .collect::<Vec<Box<TextImage>>>();
+        //
+        //            text_images.into_iter().for_each(|ti| frames.push(ti));
+        //            frame_chunk = Vec::new();
+        //        }
+        //    }
+        //    buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
+        //}
+        
+        let frames = if config.preprocessing() {
+            let mut frames: Vec<TextImage> = Vec::new();
+            let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
+            let mut frame_chunk = Vec::new();
 
-            if !config.preprocessing() {
-                frames.push(Box::new(frame));
-            } else {
+            while match capture.read(&mut buffer) {
+                Ok(b) => b,
+                Err(e) => return Err(VideoError::OpenCvError(e)),
+            } {
+                let frame = Image::new(buffer);
+            
                 frame_chunk.push(frame);
-
+            
                 if frame_chunk.len() == FRAME_CHUNK_SIZE {
                     let text_images = frame_chunk.into_par_iter()
-                        .map(|f| Box::new(TextImage::build_from_image(f, &config)))
-                        .collect::<Vec<Box<TextImage>>>();
-
+                        .map(|f| TextImage::build_from_image(f, &config))
+                        .collect::<Vec<TextImage>>();
+                
                     text_images.into_iter().for_each(|ti| frames.push(ti));
                     frame_chunk = Vec::new();
                 }
+            
+                buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
             }
-            buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
-        }
 
-        // Processes the frame chunk that was not complete
-        let text_images = frame_chunk.into_par_iter()
-        .map(|f| Box::new(TextImage::build_from_image(f, &config)))
-        .collect::<Vec<Box<TextImage>>>();
+            // Processes the frame chunk that was not complete
+            let text_images = frame_chunk.into_par_iter()
+            .map(|f| TextImage::build_from_image(f, &config))
+            .collect::<Vec<TextImage>>();
 
-        text_images.into_iter().for_each(|ti| frames.push(ti));
+            text_images.into_iter().for_each(|ti| frames.push(ti));
+
+            Frames::Preprocessed(frames)
+        } else {
+            Frames::Streamed(capture)
+        };
+
+        
 
         // Seperates audio from video
         match std::fs::remove_file(TEMP_AUDIO_PATH) {
@@ -197,19 +232,33 @@ impl Video {
     }
 }
 
-impl Iterator for Video {
-    type Item = Rc<Box<dyn ImageAsString>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let frame = self.frames.get(self.current_frame)?;
-        let frame = Rc::clone(frame);
+impl Video {
+    pub fn next_frame(&mut self) -> Option<Box<dyn ImageAsString>> {
         self.current_frame += 1;
 
-        Some(frame)
-    }
-}
+        match &mut self.frames {
+            Frames::Streamed(cap) => {
+                let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);
+                match cap.read(&mut buffer) {
+                    Ok(_) => (),
+                    Err(_) => return None,
+                };
 
-impl Video {
+                Some(Box::new(Image::new(buffer)))
+            },
+
+            Frames::Preprocessed(frames) => {
+                let current_frame = frames.remove(0);
+                Some(Box::new(current_frame))
+            }
+        }
+    }
+
+    pub fn next_frame_string(&mut self, config: &Config) -> Option<String> {
+        let next_frame = self.next_frame()?;
+        Some(next_frame.as_string(config))
+    }
+
     /// Gives the fps of the video
     pub fn fps(&self) -> u32 {
         self.fps
