@@ -138,8 +138,6 @@ impl Video {
             Frames::Streamed(capture)
         };
 
-        
-
         // Seperates audio from video
         match std::fs::remove_file(TEMP_AUDIO_PATH) {
             Ok(()) => (),
