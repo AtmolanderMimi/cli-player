@@ -16,7 +16,7 @@ async fn main() {
 
     let animation = wating_animation::spawn_animation_thread("Processing");
     let video = match Video::build_from_path(config.query(), &config) {
-        Ok(v) => v,
+        Ok(v) => { animation.end(); v },
         Err(e) => {
             animation.end();
             eprintln!("Error while tring to find on computer: {e}");
