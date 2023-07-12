@@ -115,7 +115,8 @@ impl Video {
         // Seperates audio from video
         match std::fs::remove_file(TEMP_AUDIO_PATH) {
             Ok(()) => (),
-            Err(e) => return Err(VideoError::IoError(e))
+            // It makes an error when there is no file to delete which is normal
+            Err(_) => (),
         }
 
         let command_result = Command::new("ffmpeg")
