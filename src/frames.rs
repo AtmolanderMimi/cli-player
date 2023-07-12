@@ -1,9 +1,75 @@
-use opencv::videoio::{VideoCapture, VideoCaptureTrait};
+use opencv::videoio::{VideoCapture, VideoCaptureTrait, self};
 use opencv::core::UMat;
+use opencv::videostab::{VideoFileSource, VideoFileSourceTrait};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use crate::{VideoError, Config};
 use crate::image::{TextImage, Image, ImageAsString};
+
+pub struct FramesManager {
+    frames: Frames,
+    target_fps: u32,
+    error_per_frame: f64,            
+    error: f64,
+}
+
+impl FramesManager {
+    fn new(frames: Frames, fps: u32, target_fps: u32) -> FramesManager {
+        let error_per_frame = (fps as f64 / target_fps as f64) - 1.0;
+
+        FramesManager {
+            frames,
+            target_fps,
+            error_per_frame,
+            error: 0.0
+        }
+    }
+
+    pub fn build(path: &str, config: &Config) -> Result<FramesManager, VideoError> {
+        let mut source = match VideoFileSource::new(&path, false) {
+            Ok(c) => c,
+            Err(e) => return Err(VideoError::OpenCvError(e))
+        };
+        let fps = match source.fps() {
+            Ok(f) => f as u32,
+            Err(e) => return Err(VideoError::OpenCvError(e)),
+        };
+
+        let capture = match VideoCapture::from_file(&path, videoio::CAP_ANY) {
+            Ok(c) => c,
+            Err(e) => return Err(VideoError::OpenCvError(e))
+        };
+
+        let target_fps = config.frame_limit();
+
+        let frames = if config.preprocessing() {
+            Frames::build_preprocessed(capture, config)?
+        } else {
+            Frames::build_streamed(capture)
+        };
+
+        let frames_manager = FramesManager::new(frames, fps, target_fps);
+
+        Ok(frames_manager) 
+    }
+}
+
+impl FramesManager {
+    pub fn next_frame(&mut self) -> Option<Box<dyn ImageAsString>> {
+        self.error += self.error_per_frame;
+
+        while self.error >= 1.0 {
+            self.frames.next_frame();
+            self.error -= 1.0;
+        }
+
+        self.frames.next_frame()
+    }
+
+    pub fn fps(&self) -> u32 {
+        self.target_fps
+    }
+}
 
 pub enum Frames {
     Streamed(VideoCapture),
@@ -55,7 +121,6 @@ impl Frames {
 
 impl Frames {
     pub fn next_frame(&mut self) -> Option<Box<dyn ImageAsString>> {
-
         match self {
             Frames::Streamed(cap) => {
                 let mut buffer = UMat::new(opencv::core::UMatUsageFlags::USAGE_DEFAULT);

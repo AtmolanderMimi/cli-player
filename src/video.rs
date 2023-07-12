@@ -5,16 +5,13 @@ use std::fmt::{Display, Debug};
 use std::io;
 use std::process::Command;
 
-use opencv::videoio;
-use opencv::videoio::VideoCapture;
-use opencv::videostab::{VideoFileSourceTrait, VideoFileSource};
 use rustube::Video as YtVideo;
 use rustube::url::Url;
 
 use crate::audio_manager::AudioManager;
 use crate::config::Config;
 use crate::image::ImageAsString;
-use crate::frames::Frames;
+use crate::frames::FramesManager;
 
 #[derive(Debug)]
 pub enum VideoError {
@@ -68,18 +65,16 @@ impl Error for RodioError {}
 
 /// Contains the data of the video and is responsible for downloading
 pub struct Video {
-    frames: Frames,
+    frames: FramesManager,
     audio_source_path: String,
     audio_player: AudioManager,
-    fps: u32,
     _current_frame: usize,
 }
 
 impl Video {
-    fn new(frames: Frames, fps: u32, audio_source_path: String, audio_player: AudioManager) -> Video {
+    fn new(frames: FramesManager, audio_source_path: String, audio_player: AudioManager) -> Video {
         Video {
             frames,
-            fps,
             audio_source_path,
             audio_player,
             _current_frame: 0,
@@ -114,26 +109,8 @@ impl Video {
     /// Collects all the frames from the video specified at the path
     pub fn build_from_path(path: &str, config: &Config) -> Result<Video, VideoError> {
         const TEMP_AUDIO_PATH: &str = "./temp_audio.wav";
-
-        let mut source = match VideoFileSource::new(&path, false) {
-            Ok(c) => c,
-            Err(e) => return Err(VideoError::OpenCvError(e))
-        };
-        let fps = match source.fps() {
-            Ok(f) => f as u32,
-            Err(e) => return Err(VideoError::OpenCvError(e)),
-        };
-
-        let capture = match VideoCapture::from_file(&path, videoio::CAP_ANY) {
-            Ok(c) => c,
-            Err(e) => return Err(VideoError::OpenCvError(e))
-        };
         
-        let frames = if config.preprocessing() {
-            Frames::build_preprocessed(capture, config)?
-        } else {
-            Frames::Streamed(capture)
-        };
+        let frames = FramesManager::build(path, config)?;
 
         // Seperates audio from video
         match std::fs::remove_file(TEMP_AUDIO_PATH) {
@@ -156,7 +133,7 @@ impl Video {
 
         let audio_player = AudioManager::build()?;
 
-        let video = Video::new(frames, fps, TEMP_AUDIO_PATH.to_string(), audio_player);
+        let video = Video::new(frames, TEMP_AUDIO_PATH.to_string(), audio_player);
         Ok(video)
     }
 }
@@ -173,7 +150,7 @@ impl Video {
 
     /// Gives the fps of the video
     pub fn fps(&self) -> u32 {
-        self.fps
+        self.frames.fps()
     }
 
     pub fn start_audio(&self) -> Result<(), VideoError> {
