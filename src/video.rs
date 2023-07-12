@@ -129,7 +129,10 @@ impl Video {
                 
         match command_result {
             Ok(_) => (),
-            Err(e) => return Err(VideoError::FfmpegError(e)),
+            // We don't really care if the audio is invalid, it will get caught later and there will
+            // just be no audio
+            Err(_) => eprintln!("Error while using FFMPEG, is it installed?"),
+            //Err(e) => return Err(VideoError::FfmpegError(e)),
         }
 
         let audio_player = AudioManager::build()?;
