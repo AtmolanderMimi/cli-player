@@ -19,17 +19,17 @@ struct Args {
     #[arg(short, long, default_value_t = 100)]
     width: u32,
 
-    /// Limits the frame rate to this
-    #[arg(short, long, default_value_t = 30)]
+    /// Limits the frame rate to this (set to 0 for the video's native)
+    #[arg(short, long, default_value_t = 15)]
     frame_limit: u32,
 
     /// Sets the volume (can be over 1.0)
     #[arg(short, long, default_value_t = 1.0)]
     volume: f32,
 
-    /// Removes frame preprocessing (takes a lot VRAM)
+    /// Preprocesses the frames (barely increases performance and takes up a lot of RAM)
     #[arg(long, default_value_t = false)]
-    no_preprocess: bool,
+    preprocess: bool,
 
     /// Disables the use of color
     #[arg(long, default_value_t = false)]
@@ -83,14 +83,20 @@ impl Config {
     pub fn build_from_args() -> Result<Config, PalletDoesNotExistError> {
         let args = Args::parse();
 
+        let frame_limit = if args.frame_limit == 0 {
+            u32::MAX
+        } else {
+            args.frame_limit
+        };
+
         let config = Config::build(
             args.url_or_path,
             args.pallet,
             args.width,
-            args.frame_limit,
+            frame_limit,
             args.volume,
             !args.no_color,
-            !args.no_preprocess,
+            args.preprocess,
         )?;
 
         Ok(config)

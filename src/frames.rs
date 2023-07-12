@@ -14,7 +14,11 @@ pub struct FramesManager {
 }
 
 impl FramesManager {
-    fn new(frames: Frames, fps: u32, target_fps: u32) -> FramesManager {
+    fn new(frames: Frames, fps: u32, mut target_fps: u32) -> FramesManager {
+        if target_fps > fps {
+            target_fps = fps;
+        }
+
         let error_per_frame = (fps as f64 / target_fps as f64) - 1.0;
 
         FramesManager {
