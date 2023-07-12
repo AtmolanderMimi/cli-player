@@ -75,7 +75,7 @@ impl FramesManager {
     }
 }
 
-pub enum Frames {
+enum Frames {
     Streamed(VideoCapture),
     Preprocessed(Vec<TextImage>)
 }
