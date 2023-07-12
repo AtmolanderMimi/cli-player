@@ -33,7 +33,7 @@ impl Image {
     }
 
     fn scale(&self, width: u32) -> UMat {
-        const INTERPOLATION: i32 = imgproc::INTER_LINEAR;
+        const INTERPOLATION: i32 = imgproc::INTER_LANCZOS4;
         const HEIGHT_TO_WIDHT: f64 = 2.0;
 
         let mut old_size = Size::default();
