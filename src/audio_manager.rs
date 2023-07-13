@@ -70,3 +70,19 @@ impl AudioManager {
         self.sink.set_volume(volume)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn building_audio_manager_in_default() {
+        AudioManager::build().unwrap();
+    }
+
+    #[test]
+    fn playing_file_from_path() {
+        let audio = AudioManager::build().unwrap();
+        audio.play_from_path("./test-assets/audio.wav").unwrap();
+    }
+}

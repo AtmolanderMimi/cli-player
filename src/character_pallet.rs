@@ -92,12 +92,10 @@ mod tests {
         CharacterPallet::new("ascii".to_string(), character)
     }
 
-    /// This test assumes that there is a valid `character-pallets.txt` file,
-    /// that it is well formatted and contains atleast one pallet
     #[test]
     fn parseing_works() {
         let pallets =
-            parse_pallets_from_file("character-pallets.txt").unwrap();
+            parse_pallets_from_file("./test-assets/character-pallets.txt").unwrap();
 
         assert_ne!(0, pallets.len())
     }
@@ -110,6 +108,10 @@ mod tests {
         assert_eq!(Some('@'), pallet.character_for_luminosity(255));
         assert_eq!(Some(':'), pallet.character_for_luminosity(15));
         assert_eq!(Some(' '), pallet.character_for_luminosity(0));
-        assert_eq!(None, empty_pallet.character_for_luminosity(141))
+        assert_eq!(None, empty_pallet.character_for_luminosity(141));
+
+        for l in 0..255u8 {
+            pallet.character_for_luminosity(l).unwrap();
+        }
     }
 }

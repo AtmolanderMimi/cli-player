@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, error::Error};
 
 use clap::Parser;
 
@@ -36,6 +36,7 @@ struct Args {
     no_color: bool,
 }
 
+#[derive(Debug)]
 pub struct PalletDoesNotExistError;
 
 impl Display for PalletDoesNotExistError {
@@ -43,6 +44,8 @@ impl Display for PalletDoesNotExistError {
         write!(f, "The pallet specified is not in the list of available pallets")
     }
 }
+
+impl Error for PalletDoesNotExistError {}
 
 pub struct Config {
     query: String,
@@ -55,7 +58,7 @@ pub struct Config {
 }
 
 impl Config {
-    fn build(query: String, pallet: String, width: u32, frame_limit: u32, volume: f32, color: bool, preprocessing: bool) -> Result<Config, PalletDoesNotExistError> {
+    pub fn build(query: String, pallet: String, width: u32, frame_limit: u32, volume: f32, color: bool, preprocessing: bool) -> Result<Config, PalletDoesNotExistError> {
         let character_pallets = match character_pallet::parse_pallets_from_file("character-pallets.txt") {
             Ok(p) => p,
             Err(e) => panic!("Error while parseing: {e}"),

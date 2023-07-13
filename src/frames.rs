@@ -44,7 +44,10 @@ impl FramesManager {
             Err(e) => return Err(VideoError::OpenCvError(e))
         };
 
-        let target_fps = config.frame_limit();
+        let target_fps = match config.frame_limit() {
+            0 => u32::MAX,
+            x => x,
+        };
 
         let frames = if config.preprocessing() {
             Frames::build_preprocessed(capture, config)?
@@ -141,5 +144,65 @@ impl Frames {
                 Some(Box::new(current_frame))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn default_config_streamed() -> Config {
+        Config::build("video.mp4".to_string(), "ascii".to_string(), 50, 15, 1.0, true, false)
+            .unwrap()
+    }
+
+    fn default_config_preprocessed() -> Config {
+        Config::build("video.mp4".to_string(), "ascii".to_string(), 50, 15, 1.0, true, true)
+            .unwrap()
+    }
+
+    fn default_config_no_limiter() -> Config {
+        Config::build("video.mp4".to_string(), "ascii".to_string(), 50, 0, 1.0, true, false)
+            .unwrap()
+    }
+
+    fn default_config_big_limiter() -> Config {
+        Config::build("video.mp4".to_string(), "ascii".to_string(), 50, 1, 1.0, true, false)
+            .unwrap()
+    }
+
+    #[test]
+    fn build_frames_from_path() {
+        let config = &default_config_streamed();
+        FramesManager::build("./test-assets/video.mp4", config).unwrap();
+    }
+
+    // If the videos are the same they will both try to get assess to the right to read
+    #[test]
+    fn get_images_frames_manager_streamed() {
+        let config = &default_config_streamed();
+        let mut frames = FramesManager::build("./test-assets/video-streamed.mp4", config).unwrap();
+        frames.next_frame().unwrap();
+    }
+
+    #[test]
+    fn get_images_frames_manager_preprocessed() {
+        let config = &default_config_preprocessed();
+        let mut frames = FramesManager::build("./test-assets/video-preprocessed.mp4", config).unwrap();
+        frames.next_frame().unwrap();
+    }
+
+    #[test]
+    fn no_frame_limit() {
+        let config = &default_config_no_limiter();
+        let mut frames = FramesManager::build("./test-assets/video-preprocessed.mp4", config).unwrap();
+        frames.next_frame().unwrap();
+    }
+
+    #[test]
+    fn big_frame_limit() {
+        let config = &default_config_big_limiter();
+        let mut frames = FramesManager::build("./test-assets/video-preprocessed.mp4", config).unwrap();
+        frames.next_frame().unwrap();
     }
 }
