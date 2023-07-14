@@ -9,7 +9,7 @@ use crate::character_pallet::{CharacterPallet, self};
 struct Args {
     /// The url or path to use when searching the video
     #[arg(short, long)]
-    url_or_path: String,
+    query: String,
 
     /// Pallet of characters
     #[arg(short, long, default_value = "ascii")] 
@@ -93,7 +93,7 @@ impl Config {
         };
 
         let config = Config::build(
-            args.url_or_path,
+            args.query,
             args.pallet,
             args.width,
             frame_limit,
