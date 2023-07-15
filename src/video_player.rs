@@ -31,17 +31,18 @@ pub async fn play_video(mut video: Video, config: &Config) -> Result<(), Box<dyn
 
     let mut lag_count: u32 = 0;
     loop  {
+        let start = SystemTime::now();
+
         let frame = match video.next_frame_string(config) {
             Some(f) => f,
             None => break,
         };
 
-        let start = SystemTime::now();
-
+        
         println!("{}", frame);
 
-        let delta_time = start.elapsed()?;
-        let sleep_duration = match (Duration::from_secs(1) / fps).checked_sub(delta_time) {
+        let render_time = start.elapsed()?;
+        let delta_time = match (Duration::from_secs(1) / fps).checked_sub(render_time) {
             Some(d) => d,
             None => {
                 lag_count += 4;
@@ -54,7 +55,7 @@ pub async fn play_video(mut video: Video, config: &Config) -> Result<(), Box<dyn
         } else {
             lag_count = lag_count.checked_sub(1).unwrap_or(0);
         }
-        thread::sleep(sleep_duration);
+        thread::sleep(delta_time);
     }
     Ok(())
 }
