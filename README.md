@@ -14,7 +14,7 @@ Started: 2023-06-30
 Simply go into the cli-player directory and run the cli-player command in your terminal:
 
 ```text
-~/Downloads/cli-player$ cli-player -q https://www.youtube.com/watch?v=dQw4w9WgXcQ 
+~/Downloads/cli-player$ ./cli-player -q https://www.youtube.com/watch?v=dQw4w9WgXcQ 
 ```
 
 
