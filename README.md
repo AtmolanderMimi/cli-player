@@ -43,7 +43,7 @@ Simply go into the cli-player directory and run the cli-player command in your t
 
 Here are the ones already available:
 
-| Name         | chracters                                                                                    |
+| Name         | characters                                                                                    |
 | ------------ | -------------------------------------------------------------------------------------------- |
 | braille-6    | `⠿⠽⠳⠪⠡⠄ `                                                                                   |
 | braille-8    | `⣿⣻⣫⢭⢕⡡⢁⡀ `                                                                                 |
