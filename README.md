@@ -1,10 +1,10 @@
 # CLI-Player
 
-cli-terminal is a command line tool build with Rust that allows to play ascii representation of videos downloaded from youtube and videos from your computer in the terminal
+cli-player is a command line tool build with Rust that allows you to play ascii representation of videos downloaded from youtube and videos from your computer in the terminal.
 
 It also doubles as a youtube downloader with the use of [rustube](https://github.com/DzenanJupic/rustube). (Go check it out!)
 
-Example of cli-player in use by playing [Bad Apple in Color](https://youtu.be/5jKAuFruQxI) (Original [video](https://youtu.be/uOyaCOViAPA) by [Avs Avsi](https://www.youtube.com/@Avss))
+Example of cli-player in use by playing [Bad Apple in Color](https://youtu.be/5jKAuFruQxI). (Original [video](https://youtu.be/uOyaCOViAPA) by [Avs Avsi](https://www.youtube.com/@Avss))
 
 **REQUIRES FFMPEG TO BE INSTALLED FOR AUDIO**
 
